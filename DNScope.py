@@ -1,7 +1,7 @@
 import concurrent.futures
+import datetime
 import os
 import socket
-from time import sleep
 
 import dns.resolver
 from prettytable import PrettyTable
@@ -74,6 +74,7 @@ def perform_reverse_dns_lookup(subdomains_file_path, output_file_path, attempts=
     table.hrules = 0
     table.vertical_char = "|"
     table.junction_char = "|"
+    table.sortby = "Subdomain"
 
     for subdomain, ip in results:
         if ip:
@@ -94,9 +95,39 @@ def reverse_lookup(subdomain, attempts):
         except socket.gaierror:
             # If the first attempt fails, try again up to 2 more times
             if attempt < attempts - 1:
-                sleep(1)
                 continue
             return subdomain, None
+
+# Function to search and dump found DNS records to an ASCII table
+def dump_dns_record(domain):
+    dns_records = []
+    dns_types = ["A", "AAAA", "CNAME", "MX", "NS", "PTR", "SRV", "SOA", "TXT", "CAA", "DS", "DNSKEY"]
+
+    for dns_type in dns_types:
+        try:
+            answers = dns.resolver.resolve(domain, dns_type)
+            for rdata in answers:
+                dns_records.append((dns_type, str(rdata)))
+        except:
+            pass
+
+    if dns_records:
+        table = PrettyTable(["Type", "Record"])
+        table.hrules = 0
+        table.vertical_char = "|"
+        table.junction_char = "|"
+        table.sortby = "Type"
+        table.align['Record'] = "l"
+
+        for dns_record in dns_records:
+            table.add_row([dns_record[0], dns_record[1]])
+
+        with open(dns_records_file, 'w') as f:
+            f.write(str(table))
+        print(f"DNS records saved to {dns_records_file} file.")
+
+    else:
+        print("No DNS records found for the domain.")
 
 if __name__ == "__main__":
     print("""\
@@ -106,9 +137,9 @@ if __name__ == "__main__":
     | | | | . ` | `--. \/ __/ _ \| '_ \ / _ \\
     | |/ /| |\  |/\__/ / (_| (_) | |_) |  __/
     |___/ \_| \_/\____/ \___\___/| .__/ \___|
-                                | |
-    by NotoriusNeo              |_|          """)
-    print("Wordlist Subdomain Finder & Reverse Lookup Tool")
+                                 | |
+    by NotoriusNeo               |_|         """)
+    print("Subdomain Finder | DNS Record Dumper | Reverse Lookup Tool")
 
     try:
         with open("wordlist.txt", "r") as f:
@@ -123,32 +154,49 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
             print("\n Exiting...")
             exit()
-    
+
     # Call the check_domain function
+    now = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
     results = check_domain(domain, wordlist)
     if len(results) == 0:
         print("No subdomains found!")
     else:
-        with open("subdomains.txt", "w") as f:
+        subdomains_file = f"{now}_subdomains_{domain}.txt"
+        with open(subdomains_file, "w") as f:
             # Remove duplicates and sort the list of subdomains
             for subdomain in sorted(set(results)):
                 # Write each subdomain to a new line in the file
                 f.write(f"{subdomain}\n")
         # Print the number of unique subdomains found and saved to the file
-        print(f"{len(set(results))} unique subdomains found and saved to subdomains.txt!")
+        print(f"{len(set(results))} unique subdomains found and saved to {subdomains_file}!")
 
         valid_input = False
-        while not valid_input:       
-            answer = input("Would you like to perform a reverse lookup on the found subdomains [y]es/[n]o: ")
+        reverse_lookup_file = f"{now}_reverselookup_{domain}.txt"
+        while not valid_input:
+            answer = input("Perform a reverse lookup on the found subdomains? [y]es/[n]o: ")
             if answer == "y":
                 # Execute reverse DNS Lookup
-                perform_reverse_dns_lookup('subdomains.txt', 'reverse_lookup.txt')
-                print(f"\n Done!! Please check your files in {os.path.dirname(os.path.abspath(__file__))} !")
+                perform_reverse_dns_lookup(subdomains_file, reverse_lookup_file)
                 valid_input = True
             elif answer == "n":
-                # Exit code
-                exit()
+                break
             else:
                 # Error
                 print("Invalid input.")
 
+    valid_input = False
+    dns_records_file = f"{now}_dns_records_{domain}.txt"
+    while not valid_input:
+        answer = input("Check and retrieve all the DNS records? [y]es/[n]o: ")
+        if answer == "y":
+            # Dump all DNS records to a table.
+            dump_dns_record(domain)
+            valid_input = True
+        elif answer == "n":
+            # Exit code
+            break
+        else:
+            # Error
+            print("Invalid input.")
+
+    print(f"\n Done!! Please check your files in {os.path.dirname(os.path.abspath(__file__))} !")
