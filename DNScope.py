@@ -138,7 +138,7 @@ if __name__ == "__main__":
     | |/ /| |\  |/\__/ / (_| (_) | |_) |  __/
     |___/ \_| \_/\____/ \___\___/| .__/ \___|
                                  | |
-    by NotoriusNeo               |_|         """)
+    by EndlessFractal            |_|         """)
     print("Subdomain Finder | DNS Record Dumper | Reverse Lookup Tool")
 
     try:
