@@ -10,19 +10,19 @@ DNScope is a Python script designed to simplify DNS subdomain enumeration and re
 
 1. Clone the repository using the following command:
 
-   ```
+   ```shell
    git clone https://github.com/NotoriusNeo/DNScope
    ```
 
 2. Navigate to the cloned directory:
 
-   ```
+   ```shell
    cd DNScope
    ```
 
 3. Install the required dependencies by running:
 
-   ```
+   ```shell
    pip install -r requirements.txt
    ```
 
