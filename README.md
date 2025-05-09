@@ -30,7 +30,7 @@ DNScope is a Python script designed to simplify DNS subdomain enumeration and re
 
 Run the script using the following command:
 
-```
+```shell
 python3 DNScope.py
 ```
 
